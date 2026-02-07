@@ -8,6 +8,7 @@ from typing import Any
 import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.components import zeroconf
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
@@ -72,6 +73,36 @@ class GaggiMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for GaggiMate."""
 
     VERSION = 1
+
+    async def async_step_zeroconf(
+        self, discovery_info: zeroconf.ZeroconfServiceInfo
+    ) -> FlowResult:
+        """Handle zeroconf discovery."""
+        host = discovery_info.host
+        port = discovery_info.port or DEFAULT_PORT
+
+        # Set unique ID based on hostname to prevent duplicates
+        hostname = discovery_info.hostname.rstrip(".")
+        await self.async_set_unique_id(hostname)
+        self._abort_if_unique_id_configured()
+
+        # Try to validate connection
+        try:
+            info = await validate_connection(self.hass, host, port)
+        except CannotConnect:
+            _LOGGER.debug("Cannot connect to discovered GaggiMate at %s:%s", host, port)
+            return self.async_abort(reason="cannot_connect")
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception during discovery validation")
+            return self.async_abort(reason="unknown")
+
+        # Store discovered info for user confirmation
+        self.context["title_placeholders"] = {"name": info["title"]}
+
+        # Pre-fill the form with discovered values and show to user
+        return await self.async_step_user(
+            user_input={CONF_HOST: host, CONF_PORT: port}
+        )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

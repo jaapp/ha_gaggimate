@@ -8,6 +8,10 @@
           "host": "Host (IP or hostname)",
           "port": "Port"
         }
+      },
+      "zeroconf_confirm": {
+        "title": "Discovered GaggiMate",
+        "description": "A GaggiMate device was discovered at {name}. Do you want to add it?"
       }
     },
     "error": {
@@ -15,7 +19,8 @@
       "unknown": "An unexpected error occurred."
     },
     "abort": {
-      "already_configured": "This device is already configured."
+      "already_configured": "This device is already configured.",
+      "cannot_connect": "Cannot connect to discovered device."
     }
   }
 }
